@@ -1,25 +1,18 @@
 # Kait-
 
-## Fragments in Archive
+## Sky Hopper
 
-A browser-based story RPG inspired by Undertale-style encounters with pixel-art exploration.
-
-### Premise
-You play as Kael, teleported into collapsing dimensions where reality is forgetting itself. To stabilize existence, you must recover scattered memories across two surreal routes:
-- Dreamspace
-- Liminal worlds
+A browser game inspired by Flappy Bird. Tap or press a key to flap upward, dodge pipe obstacles, and survive as long as possible.
 
 ### How to Run
-1. Open `index.html` in a browser.
-2. Click **Begin Journey**.
-3. Move with `W`, `A`, `S`, `D`.
-4. Hold `Shift` to sprint.
-5. Step on portals, memory shards, and note tiles to progress.
+1. Open `index.html` in your browser.
+2. Press **Start Game**.
+3. Use `Space`, `W`, `Arrow Up`, or click/tap the canvas to flap.
+4. Fly through pipe gaps to increase score.
 
-### Core Systems
-- Pixel-art tile map rendered on canvas
-- Keyboard movement (`WASD`) with sprint (`Shift`)
-- Story feed with reactive narrative events
-- Quest tracker with progress per route
-- Turn-based encounter panel (Fight / Act / Focus / Mercy)
-- Multiple ending choices based on final decision
+### Gameplay Features
+- Endless side-scrolling obstacle generation
+- Bird gravity and flap physics
+- Collision detection with pipes, ceiling, and ground
+- Live score counter and persistent best score (saved in local storage)
+- Start and game over overlays with one-click restart
