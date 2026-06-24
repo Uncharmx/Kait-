@@ -4,7 +4,6 @@ ctx.imageSmoothingEnabled = false;
 
 const scoreEl = document.getElementById("score");
 const bestScoreEl = document.getElementById("best-score");
-const boostTimerEl = document.getElementById("boost-timer");
 const overlay = document.getElementById("overlay");
 const overlayTitle = document.getElementById("overlay-title");
 const overlayText = document.getElementById("overlay-text");
@@ -23,10 +22,10 @@ const config = {
 };
 
 const powerupConfig = {
-  durationFrames: 60 * 6,
-  speedBoost: 1.3,
-  pipeSlowdown: 0.78,
-  gapBonus: 56 * scale,
+  durationFrames: 60 * 3,
+  speedBoost: 1.12,
+  pipeSlowdown: 0.88,
+  gapBonus: 28 * scale,
   spawnMinFrames: 320,
   spawnJitterFrames: 220,
   width: 18 * scale,
@@ -79,20 +78,6 @@ function getGravity() {
   return config.gravity * (isBoostActive() ? powerupConfig.speedBoost : 1);
 }
 
-function updateBoostHud() {
-  if (!boostTimerEl) {
-    return;
-  }
-
-  if (!isBoostActive()) {
-    boostTimerEl.textContent = "-";
-    return;
-  }
-
-  const secondsLeft = Math.ceil((game.boostUntil - game.elapsed) / 60);
-  boostTimerEl.textContent = `${secondsLeft}s`;
-}
-
 function scheduleNextPowerup() {
   const jitter = Math.floor(Math.random() * powerupConfig.spawnJitterFrames);
   game.nextPowerupAt = game.elapsed + powerupConfig.spawnMinFrames + jitter;
@@ -120,7 +105,6 @@ function resetRound() {
   game.elapsed = 0;
   scheduleNextPowerup();
   updateScore();
-  updateBoostHud();
   hideOverlay();
 }
 
@@ -247,7 +231,6 @@ function update() {
   }
 
   game.elapsed += 1;
-  updateBoostHud();
   updateBubbles();
   updatePowerups();
   collectPowerups();
