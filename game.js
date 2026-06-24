@@ -23,11 +23,13 @@ const config = {
 
 const powerupConfig = {
   durationFrames: 60 * 3,
-  speedBoost: 1.12,
+  flapBoost: 1.28,
+  gravityBoost: 1.14,
   pipeSlowdown: 0.88,
-  gapBonus: 28 * scale,
-  spawnMinFrames: 320,
-  spawnJitterFrames: 220,
+  pillarShorten: 46 * scale,
+  // Roughly every 8-13 seconds at 60fps: rare, but still regularly seen.
+  spawnMinFrames: 480,
+  spawnJitterFrames: 300,
   width: 18 * scale,
   height: 18 * scale,
 };
@@ -66,16 +68,24 @@ function getPipeSpeed() {
   return config.pipeSpeed * (isBoostActive() ? powerupConfig.pipeSlowdown : 1);
 }
 
-function getPipeGap() {
-  return config.pipeGap + (isBoostActive() ? powerupConfig.gapBonus : 0);
-}
-
 function getFlapPower() {
-  return config.flapPower * (isBoostActive() ? powerupConfig.speedBoost : 1);
+  return config.flapPower * (isBoostActive() ? powerupConfig.flapBoost : 1);
 }
 
 function getGravity() {
-  return config.gravity * (isBoostActive() ? powerupConfig.speedBoost : 1);
+  return config.gravity * (isBoostActive() ? powerupConfig.gravityBoost : 1);
+}
+
+function getPipeOpenings(pipe) {
+  const shorten = isBoostActive() ? powerupConfig.pillarShorten : 0;
+  const halfShorten = shorten / 2;
+  const topHeight = Math.max(16 * scale, pipe.topHeight - halfShorten);
+  const bottomY = Math.min(
+    canvas.height - config.groundHeight - 16 * scale,
+    pipe.topHeight + pipe.gap + halfShorten
+  );
+
+  return { topHeight, bottomY };
 }
 
 function scheduleNextPowerup() {
@@ -122,7 +132,7 @@ function flap() {
 
 function createPipe() {
   const minTop = 70 * scale;
-  const gap = getPipeGap();
+  const gap = config.pipeGap;
   const maxTop = canvas.height - config.groundHeight - gap - 70 * scale;
   const topHeight = minTop + Math.random() * (maxTop - minTop);
 
@@ -259,6 +269,8 @@ function update() {
   for (const pipe of game.pipes) {
     pipe.x -= pipeSpeed;
 
+    const opening = getPipeOpenings(pipe);
+
     if (!pipe.counted && pipe.x + config.pipeWidth < game.angel.x) {
       pipe.counted = true;
       game.score += 1;
@@ -269,12 +281,12 @@ function update() {
       x: pipe.x,
       y: 0,
       width: config.pipeWidth,
-      height: pipe.topHeight,
+      height: opening.topHeight,
     };
 
     const bottomRect = {
       x: pipe.x,
-      y: pipe.topHeight + pipe.gap,
+      y: opening.bottomY,
       width: config.pipeWidth,
       height: canvas.height,
     };
@@ -434,44 +446,46 @@ function drawBackground() {
 
 function drawPipes() {
   for (const pipe of game.pipes) {
+    const opening = getPipeOpenings(pipe);
+
     const pipeGradient = ctx.createLinearGradient(pipe.x, 0, pipe.x + config.pipeWidth, 0);
     pipeGradient.addColorStop(0, "#ffd1ed");
     pipeGradient.addColorStop(0.52, "#c5efff");
     pipeGradient.addColorStop(1, "#e2d3ff");
 
     ctx.fillStyle = pipeGradient;
-    ctx.fillRect(pipe.x, 0, config.pipeWidth, pipe.topHeight);
+    ctx.fillRect(pipe.x, 0, config.pipeWidth, opening.topHeight);
     ctx.fillRect(
       pipe.x,
-      pipe.topHeight + pipe.gap,
+      opening.bottomY,
       config.pipeWidth,
-      canvas.height - (pipe.topHeight + pipe.gap)
+      canvas.height - opening.bottomY
     );
 
     // Enhanced caps with gradient
-    const capGrad = ctx.createLinearGradient(pipe.x, pipe.topHeight - 18, pipe.x, pipe.topHeight);
+    const capGrad = ctx.createLinearGradient(pipe.x, opening.topHeight - 18, pipe.x, opening.topHeight);
     capGrad.addColorStop(0, "#7860b8");
     capGrad.addColorStop(1, "#9788dc");
     ctx.fillStyle = capGrad;
-    ctx.fillRect(pipe.x - 4, pipe.topHeight - 18, config.pipeWidth + 8, 18);
-    ctx.fillRect(pipe.x - 4, pipe.topHeight + pipe.gap, config.pipeWidth + 8, 18);
+    ctx.fillRect(pipe.x - 4, opening.topHeight - 18, config.pipeWidth + 8, 18);
+    ctx.fillRect(pipe.x - 4, opening.bottomY, config.pipeWidth + 8, 18);
 
     // Highlight strip
     ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-    ctx.fillRect(pipe.x + 9, 0, 5, pipe.topHeight);
+    ctx.fillRect(pipe.x + 9, 0, 5, opening.topHeight);
     ctx.fillRect(
       pipe.x + 9,
-      pipe.topHeight + pipe.gap,
+      opening.bottomY,
       5,
-      canvas.height - (pipe.topHeight + pipe.gap)
+      canvas.height - opening.bottomY
     );
 
     // Decorative dots on pipes
     ctx.fillStyle = "rgba(255, 182, 223, 0.3)";
-    for (let py = 0; py < pipe.topHeight; py += 25) {
+    for (let py = 0; py < opening.topHeight; py += 25) {
       ctx.fillRect(pipe.x + 20, py + 10, 4, 4);
     }
-    for (let py = pipe.topHeight + pipe.gap; py < canvas.height; py += 25) {
+    for (let py = opening.bottomY; py < canvas.height; py += 25) {
       ctx.fillRect(pipe.x + 20, py + 10, 4, 4);
     }
   }
