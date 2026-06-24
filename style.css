@@ -183,13 +183,14 @@ h1 {
   right: 0.6rem;
   display: flex;
   justify-content: space-between;
+  gap: 0.3rem;
   z-index: 6;
   pointer-events: none;
 }
 
 .hud p {
   margin: 0;
-  min-width: 108px;
+  min-width: 88px;
   border: 2px solid #8b7ad8;
   border-radius: 0;
   background:
@@ -198,7 +199,7 @@ h1 {
   text-align: center;
   padding: 0.2rem 0.65rem;
   font-family: "VT323", monospace;
-  font-size: 1.16rem;
+  font-size: 1rem;
   letter-spacing: 0.04em;
   box-shadow: 
     0 0 0 1px rgba(213, 200, 255, 0.5),

@@ -4,6 +4,7 @@ ctx.imageSmoothingEnabled = false;
 
 const scoreEl = document.getElementById("score");
 const bestScoreEl = document.getElementById("best-score");
+const boostTimerEl = document.getElementById("boost-timer");
 const overlay = document.getElementById("overlay");
 const overlayTitle = document.getElementById("overlay-title");
 const overlayText = document.getElementById("overlay-text");
@@ -21,6 +22,17 @@ const config = {
   groundHeight: 92 * scale,
 };
 
+const powerupConfig = {
+  durationFrames: 60 * 6,
+  speedBoost: 1.3,
+  pipeSlowdown: 0.78,
+  gapBonus: 56 * scale,
+  spawnMinFrames: 320,
+  spawnJitterFrames: 220,
+  width: 18 * scale,
+  height: 18 * scale,
+};
+
 const game = {
   state: "ready",
   angel: {
@@ -34,6 +46,9 @@ const game = {
   score: 0,
   bestScore: Number(localStorage.getItem("skyhopper-best") || 0),
   bubbles: [],
+  powerups: [],
+  boostUntil: 0,
+  nextPowerupAt: 0,
   frameId: null,
   elapsed: 0,
 };
@@ -42,6 +57,45 @@ bestScoreEl.textContent = String(game.bestScore);
 
 function updateScore() {
   scoreEl.textContent = String(game.score);
+}
+
+function isBoostActive() {
+  return game.elapsed < game.boostUntil;
+}
+
+function getPipeSpeed() {
+  return config.pipeSpeed * (isBoostActive() ? powerupConfig.pipeSlowdown : 1);
+}
+
+function getPipeGap() {
+  return config.pipeGap + (isBoostActive() ? powerupConfig.gapBonus : 0);
+}
+
+function getFlapPower() {
+  return config.flapPower * (isBoostActive() ? powerupConfig.speedBoost : 1);
+}
+
+function getGravity() {
+  return config.gravity * (isBoostActive() ? powerupConfig.speedBoost : 1);
+}
+
+function updateBoostHud() {
+  if (!boostTimerEl) {
+    return;
+  }
+
+  if (!isBoostActive()) {
+    boostTimerEl.textContent = "-";
+    return;
+  }
+
+  const secondsLeft = Math.ceil((game.boostUntil - game.elapsed) / 60);
+  boostTimerEl.textContent = `${secondsLeft}s`;
+}
+
+function scheduleNextPowerup() {
+  const jitter = Math.floor(Math.random() * powerupConfig.spawnJitterFrames);
+  game.nextPowerupAt = game.elapsed + powerupConfig.spawnMinFrames + jitter;
 }
 
 function showOverlay(title, text, buttonLabel) {
@@ -60,9 +114,13 @@ function resetRound() {
   game.angel.y = canvas.height / 2;
   game.angel.velocity = 0;
   game.pipes = [];
+  game.powerups = [];
+  game.boostUntil = 0;
   game.score = 0;
   game.elapsed = 0;
+  scheduleNextPowerup();
   updateScore();
+  updateBoostHud();
   hideOverlay();
 }
 
@@ -75,19 +133,59 @@ function flap() {
     return;
   }
 
-  game.angel.velocity = config.flapPower;
+  game.angel.velocity = getFlapPower();
 }
 
 function createPipe() {
   const minTop = 70 * scale;
-  const maxTop = canvas.height - config.groundHeight - config.pipeGap - 70 * scale;
+  const gap = getPipeGap();
+  const maxTop = canvas.height - config.groundHeight - gap - 70 * scale;
   const topHeight = minTop + Math.random() * (maxTop - minTop);
 
   game.pipes.push({
     x: canvas.width + 10,
     topHeight,
+    gap,
     counted: false,
   });
+}
+
+function spawnPowerup() {
+  const yMin = 40 * scale;
+  const yMax = canvas.height - config.groundHeight - 46 * scale;
+  game.powerups.push({
+    x: canvas.width + 30,
+    y: yMin + Math.random() * (yMax - yMin),
+    width: powerupConfig.width,
+    height: powerupConfig.height,
+    wobble: Math.random() * Math.PI * 2,
+  });
+}
+
+function updatePowerups() {
+  if (game.elapsed >= game.nextPowerupAt) {
+    spawnPowerup();
+    scheduleNextPowerup();
+  }
+
+  const pipeSpeed = getPipeSpeed();
+  for (const powerup of game.powerups) {
+    powerup.x -= pipeSpeed;
+    powerup.wobble += 0.08;
+    powerup.y += Math.sin(powerup.wobble) * 0.35;
+  }
+
+  game.powerups = game.powerups.filter((powerup) => powerup.x + powerup.width > -20);
+}
+
+function collectPowerups() {
+  for (let i = game.powerups.length - 1; i >= 0; i -= 1) {
+    const powerup = game.powerups[i];
+    if (intersects(game.angel, powerup)) {
+      game.powerups.splice(i, 1);
+      game.boostUntil = Math.max(game.boostUntil, game.elapsed) + powerupConfig.durationFrames;
+    }
+  }
 }
 
 function intersects(a, b) {
@@ -149,13 +247,18 @@ function update() {
   }
 
   game.elapsed += 1;
+  updateBoostHud();
   updateBubbles();
+  updatePowerups();
+  collectPowerups();
 
-  if (game.elapsed % Math.floor(config.pipeSpacing / config.pipeSpeed) === 0) {
+  const pipeSpeed = getPipeSpeed();
+
+  if (game.elapsed % Math.floor(config.pipeSpacing / pipeSpeed) === 0) {
     createPipe();
   }
 
-  game.angel.velocity += config.gravity;
+  game.angel.velocity += getGravity();
   game.angel.y += game.angel.velocity;
 
   const groundY = canvas.height - config.groundHeight;
@@ -165,7 +268,7 @@ function update() {
   }
 
   for (const pipe of game.pipes) {
-    pipe.x -= config.pipeSpeed;
+    pipe.x -= pipeSpeed;
 
     if (!pipe.counted && pipe.x + config.pipeWidth < game.angel.x) {
       pipe.counted = true;
@@ -182,7 +285,7 @@ function update() {
 
     const bottomRect = {
       x: pipe.x,
-      y: pipe.topHeight + config.pipeGap,
+      y: pipe.topHeight + pipe.gap,
       width: config.pipeWidth,
       height: canvas.height,
     };
@@ -351,9 +454,9 @@ function drawPipes() {
     ctx.fillRect(pipe.x, 0, config.pipeWidth, pipe.topHeight);
     ctx.fillRect(
       pipe.x,
-      pipe.topHeight + config.pipeGap,
+      pipe.topHeight + pipe.gap,
       config.pipeWidth,
-      canvas.height - (pipe.topHeight + config.pipeGap)
+      canvas.height - (pipe.topHeight + pipe.gap)
     );
 
     // Enhanced caps with gradient
@@ -362,16 +465,16 @@ function drawPipes() {
     capGrad.addColorStop(1, "#9788dc");
     ctx.fillStyle = capGrad;
     ctx.fillRect(pipe.x - 4, pipe.topHeight - 18, config.pipeWidth + 8, 18);
-    ctx.fillRect(pipe.x - 4, pipe.topHeight + config.pipeGap, config.pipeWidth + 8, 18);
+    ctx.fillRect(pipe.x - 4, pipe.topHeight + pipe.gap, config.pipeWidth + 8, 18);
 
     // Highlight strip
     ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
     ctx.fillRect(pipe.x + 9, 0, 5, pipe.topHeight);
     ctx.fillRect(
       pipe.x + 9,
-      pipe.topHeight + config.pipeGap,
+      pipe.topHeight + pipe.gap,
       5,
-      canvas.height - (pipe.topHeight + config.pipeGap)
+      canvas.height - (pipe.topHeight + pipe.gap)
     );
 
     // Decorative dots on pipes
@@ -379,9 +482,43 @@ function drawPipes() {
     for (let py = 0; py < pipe.topHeight; py += 25) {
       ctx.fillRect(pipe.x + 20, py + 10, 4, 4);
     }
-    for (let py = pipe.topHeight + config.pipeGap; py < canvas.height; py += 25) {
+    for (let py = pipe.topHeight + pipe.gap; py < canvas.height; py += 25) {
       ctx.fillRect(pipe.x + 20, py + 10, 4, 4);
     }
+  }
+}
+
+function drawPowerups() {
+  for (const powerup of game.powerups) {
+    const cx = powerup.x + powerup.width / 2;
+    const cy = powerup.y + powerup.height / 2;
+    const pulse = Math.sin(game.elapsed * 0.2 + powerup.wobble) * 0.5 + 0.5;
+
+    const glow = ctx.createRadialGradient(cx, cy, 1, cx, cy, powerup.width * 1.4);
+    glow.addColorStop(0, `rgba(255, 255, 255, ${0.4 + pulse * 0.28})`);
+    glow.addColorStop(1, "rgba(255, 255, 255, 0)");
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(cx, cy, powerup.width * 1.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#fff0a6";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - powerup.height * 0.55);
+    ctx.lineTo(cx + powerup.width * 0.22, cy - powerup.height * 0.15);
+    ctx.lineTo(cx + powerup.width * 0.6, cy - powerup.height * 0.12);
+    ctx.lineTo(cx + powerup.width * 0.3, cy + powerup.height * 0.1);
+    ctx.lineTo(cx + powerup.width * 0.38, cy + powerup.height * 0.52);
+    ctx.lineTo(cx, cy + powerup.height * 0.27);
+    ctx.lineTo(cx - powerup.width * 0.38, cy + powerup.height * 0.52);
+    ctx.lineTo(cx - powerup.width * 0.3, cy + powerup.height * 0.1);
+    ctx.lineTo(cx - powerup.width * 0.6, cy - powerup.height * 0.12);
+    ctx.lineTo(cx - powerup.width * 0.22, cy - powerup.height * 0.15);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+    ctx.fillRect(cx - powerup.width * 0.05, cy - powerup.height * 0.36, powerup.width * 0.1, powerup.height * 0.26);
   }
 }
 
@@ -510,6 +647,7 @@ function drawReadyHint() {
 function render() {
   drawBackground();
   drawPipes();
+  drawPowerups();
   drawGround();
   drawAngelSparkleTrail();
   drawAngel();
@@ -543,7 +681,7 @@ startButton.addEventListener("click", () => {
 window.addEventListener("keydown", handleInput);
 canvas.addEventListener("pointerdown", handleInput);
 
-showOverlay("Tap or Press Space", "Guide your angel through every dreamy gate.", "Start Game");
+showOverlay("Tap or Press Space", "Guide your angel through every dreamy gate and grab star boosts.", "Start Game");
 for (let i = 0; i < 14; i += 1) {
   spawnBubble(true);
 }
