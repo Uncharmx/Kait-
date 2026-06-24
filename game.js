@@ -126,20 +126,31 @@ function createPipe() {
   const maxTop = canvas.height - config.groundHeight - gap - 70 * scale;
   const topHeight = minTop + Math.random() * (maxTop - minTop);
 
-  game.pipes.push({
+  const pipe = {
     x: canvas.width + 10,
     topHeight,
     gap,
     counted: false,
-  });
+  };
+
+  game.pipes.push(pipe);
+
+  if (game.elapsed >= game.nextPowerupAt) {
+    spawnPowerup(pipe);
+    scheduleNextPowerup();
+  }
 }
 
-function spawnPowerup() {
-  const yMin = 40 * scale;
-  const yMax = canvas.height - config.groundHeight - 46 * scale;
+function spawnPowerup(pipe) {
+  const targetPipe = pipe || game.pipes[game.pipes.length - 1];
+  if (!targetPipe) {
+    return;
+  }
+
+  const centerY = targetPipe.topHeight + targetPipe.gap / 2;
   game.powerups.push({
-    x: canvas.width + 30,
-    y: yMin + Math.random() * (yMax - yMin),
+    x: targetPipe.x + config.pipeWidth / 2 - powerupConfig.width / 2,
+    y: centerY - powerupConfig.height / 2,
     width: powerupConfig.width,
     height: powerupConfig.height,
     wobble: Math.random() * Math.PI * 2,
@@ -147,11 +158,6 @@ function spawnPowerup() {
 }
 
 function updatePowerups() {
-  if (game.elapsed >= game.nextPowerupAt) {
-    spawnPowerup();
-    scheduleNextPowerup();
-  }
-
   const pipeSpeed = getPipeSpeed();
   for (const powerup of game.powerups) {
     powerup.x -= pipeSpeed;
