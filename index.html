@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fragments in Archive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="mist" aria-hidden="true"></div>
+    <main class="game-shell">
+      <section class="game-layout">
+        <section class="main-screen panel">
+          <header class="title-panel">
+            <p class="subtitle">Story RPG Prototype</p>
+            <h1>Fragments in Archive</h1>
+            <p id="location-text" class="location-text"></p>
+          </header>
+
+          <section class="hud" aria-label="Player status">
+            <div>
+              <span class="label">Dimension</span>
+              <strong id="dimension-name">Null Transit</strong>
+            </div>
+            <div>
+              <span class="label">HP</span>
+              <strong id="player-hp">20 / 20</strong>
+            </div>
+            <div>
+              <span class="label">Echoes</span>
+              <strong id="echo-count">0</strong>
+            </div>
+            <div>
+              <span class="label">Memories Restored</span>
+              <strong id="memory-count">0 / 6</strong>
+            </div>
+          </section>
+
+          <div class="window-frame">
+            <div class="window-bar" aria-hidden="true">
+              <div class="bar-title"></div>
+              <div class="bar-actions">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+
+            <div class="canvas-wrap">
+              <canvas id="game-canvas" width="768" height="576" aria-label="Game world"></canvas>
+            </div>
+
+            <footer class="window-footer">
+              <button id="start-button" class="major frame-btn" aria-label="Begin Journey">▶</button>
+              <button id="restart-button" class="frame-btn" aria-label="Restart">↺</button>
+              <button id="howto-button" class="frame-btn" aria-label="How To Play">?</button>
+            </footer>
+          </div>
+
+          <section class="panel battle-panel" id="battle-panel" hidden>
+            <h2>Encounter</h2>
+            <div class="battle-top">
+              <canvas id="enemy-portrait" width="72" height="72" aria-label="Enemy portrait"></canvas>
+              <p id="enemy-status"></p>
+            </div>
+            <div class="battle-meter-wrap">
+              <div id="mercy-meter" class="mercy-meter"></div>
+            </div>
+            <div class="battle-buttons" id="battle-buttons"></div>
+          </section>
+
+          <div id="choice-buttons" class="button-grid"></div>
+        </section>
+      </section>
+
+      <section class="menu-overlay" id="help-menu" hidden>
+        <div class="menu-card panel">
+          <div class="menu-head">
+            <h2>How To Play</h2>
+            <button id="close-menu-button">Close</button>
+          </div>
+
+          <p class="controls-hint">Move with WASD. Hold Shift to sprint.</p>
+          <p>Recover all memory shards, avoid corrupted fragments, and survive angelic encounters.</p>
+
+          <section class="legend">
+            <h2>Legend</h2>
+            <ul>
+              <li><span class="swatch memory"></span> Memory shard: collect this</li>
+              <li><span class="swatch danger"></span> Corrupted fragment: avoid this</li>
+              <li><span class="swatch portal"></span> Portal tile: travel</li>
+            </ul>
+          </section>
+
+          <section class="quests-panel">
+            <h2>Tasks</h2>
+            <ul id="quest-list"></ul>
+          </section>
+
+          <section class="story-panel" aria-live="polite">
+            <h2>Story Feed</h2>
+            <div id="story-feed" class="story-feed"></div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <script src="game.js"></script>
+  </body>
+</html>
