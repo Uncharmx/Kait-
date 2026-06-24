@@ -206,17 +206,6 @@ h1 {
   position: relative;
 }
 
-.hud p::before {
-  content: "";
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 8px;
-  height: 8px;
-  background: #ffb7e4;
-  opacity: 0.6;
-}
-
 .overlay {
   position: absolute;
   inset: 20px 0 0;
